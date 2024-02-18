@@ -171,3 +171,8 @@ mysql.sock
 
 # Programs
 senhas_geradas.json
+
+# test
+replica
+source
+logs

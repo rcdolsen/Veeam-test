@@ -27,7 +27,8 @@ def folder_creator(folder):
         folder_path = Path(input_path) / folder
         try:
             folder_path.mkdir(parents=True, exist_ok=True)
-        except (OSError):
+        except OSError as e:
+            print(e)
             print(
                 'you can`t create a folder using invalid characters'
                 '\nplease input again using valid characters\n'
@@ -51,6 +52,15 @@ replica_folder = folder_creator('replica')
 # using the function folder_creator to create the folder "logs"
 logs_folder = folder_creator('logs')
 
+# configure the logging and creates the log file
+logging.basicConfig(
+    filename=logs_folder.joinpath('operations.log'),
+    filemode='a',
+    format='%(levelname)s - %(asctime)s \n%(message)s\n',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 while True:
     try:
         sinc_time = float(
@@ -65,17 +75,12 @@ while True:
         break
 
 
-# function to create the log file and the infos inside
+# function to add infos in the log file and print to the console
 def make_log(operation, file, f_d):
-    print("loguei mane")
-    logging.basicConfig(
-        filename=logs_folder.joinpath('operations.log'),
-        filemode='a',
-        format='%(levelname)s - %(asctime)s \n%(message)s\n',
-        level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    logging.info(f'the {f_d} "{file}" was {operation} the replica folder')
+    log_message = f'the {f_d} "{file}" was {operation} the replica folder'
+    logging.info(log_message)
+    print(log_message)
+    return log_message
 
 
 # Iterates over the folders to check if the files exist in both folders
@@ -91,6 +96,8 @@ def make_sinc():
     for replica_file in replica_folder.glob('*'):
         replica_files.append(replica_file.name)
 
+        # Iterates over the source and replica folders and checks if each file
+        # in source folder is in replica folder
     for source_file in source_folder.glob('*'):
         if source_file.name in replica_files:
             for replica_file in replica_folder.glob('*'):
@@ -98,9 +105,10 @@ def make_sinc():
                 # if the files exist in both folders check if they have the
                 # same name and have been altered
                 if replica_file.name == source_file.name:
-                    if source_file.stat().st_mtime == replica_file.stat().st_mtime:
+                    if source_file.stat().st_mtime \
+                            == replica_file.stat().st_mtime:
                         continue
-                    # replaces the file if it have been altered
+                    # replaces the file or folder if it has been altered
                     else:
                         if source_file.is_file():
                             shutil.copy2(source_file, replica_folder)
@@ -118,7 +126,6 @@ def make_sinc():
             if source_file.is_file():
                 shutil.copy2(source_file, replica_folder)
                 make_log('created in', source_file.name, 'file')
-            # elif source_file.is_dir():
             else:
                 shutil.copytree(source_file, replica_folder/source_file.name)
                 make_log('created in', source_file.name, 'folder')
@@ -138,12 +145,12 @@ def make_sinc():
                 make_log('erased from', replica_file.name, 'folder')
 
 
-# Function to synchronize files at regular intervals
+# Function to synchronize files at regular intervals defined by the user
 def sinc_exec():
     while True:
         make_sinc()
         time.sleep(sinc_time)
 
 
-# Start synchronization
+# Starts synchronization
 sinc_exec()
