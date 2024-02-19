@@ -88,11 +88,11 @@ def make_sinc():
     source_files = []
     replica_files = []
 
-    # saves the names of the files in source_file in a list
+    # saves the names of the files in source_foulder in a list
     for source_file in source_folder.glob('*'):
         source_files.append(source_file.name)
 
-    # saves the names of the files in replica_file in a list
+    # saves the names of the files in replica_foulder in a list
     for replica_file in replica_folder.glob('*'):
         replica_files.append(replica_file.name)
 
@@ -102,24 +102,23 @@ def make_sinc():
         if source_file.name in replica_files:
             for replica_file in replica_folder.glob('*'):
 
-                # if the files exist in both folders check if they have the
-                # same name and have been altered
-                if replica_file.name == source_file.name:
-                    if source_file.stat().st_mtime \
-                            == replica_file.stat().st_mtime:
-                        continue
-                    # replaces the file or folder if it has been altered
+                equal_name = replica_file.name == source_file.name
+                source_stat = source_file.stat().st_mtime
+                replica_stat = replica_file.stat().st_mtime
+
+                # if the files exist in both folders, check if they have the
+                # same name and have been altered and replaces the file or
+                # folder if it has been altered
+                if equal_name and source_stat != replica_stat:
+                    if source_file.is_file():
+                        shutil.copy2(source_file, replica_folder)
+                        make_log('replaced in', source_file.name, 'file')
                     else:
-                        if source_file.is_file():
-                            shutil.copy2(source_file, replica_folder)
-                            make_log('replaced in', source_file.name, 'file')
-                        else:
-                            shutil.rmtree(replica_file)
-                            shutil.copytree(
-                                source_file, replica_folder/source_file.name)
-                            make_log('replaced in', source_file.name, 'file')
-                else:
-                    continue
+                        shutil.rmtree(replica_file)
+                        shutil.copytree(
+                            source_file, replica_folder/source_file.name)
+                        make_log('replaced in', source_file.name, 'folder')
+
         # copies the file in source folder to replica folder if it does not
         # exist
         else:
