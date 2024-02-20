@@ -83,32 +83,37 @@ def make_log(operation, file, f_d):
     return log_message
 
 
-# Iterates over the folders to check if the files exist in both folders
-def make_sinc():
+# saves the names of the source_foulder files in a list
+def make_source_list():
     source_files = []
-    replica_files = []
-
-    # saves the names of the files in source_foulder in a list
     for source_file in source_folder.glob('*'):
         source_files.append(source_file.name)
+    return source_files
 
-    # saves the names of the files in replica_foulder in a list
+
+# saves the names of the replica_foulder files in a list
+def make_replica_list():
+    replica_files = []
     for replica_file in replica_folder.glob('*'):
         replica_files.append(replica_file.name)
+    return replica_files
 
-        # Iterates over the source and replica folders and checks if each file
-        # in source folder is in replica folder
+
+def create_or_copy_file():
+    replica_files = make_replica_list()
+    # Iterates over the folders to check if the files exist in both
     for source_file in source_folder.glob('*'):
         if source_file.name in replica_files:
             for replica_file in replica_folder.glob('*'):
 
+                # encapsulates conditions in variables for better readability
                 equal_name = replica_file.name == source_file.name
                 source_stat = source_file.stat().st_mtime
                 replica_stat = replica_file.stat().st_mtime
 
                 # if the files exist in both folders, check if they have the
-                # same name and have been altered and replaces the file or
-                # folder if it has been altered
+                # same name and have been altered, if so, replaces them in
+                # replica folder
                 if equal_name and source_stat != replica_stat:
                     if source_file.is_file():
                         shutil.copy2(source_file, replica_folder)
@@ -129,12 +134,13 @@ def make_sinc():
                 shutil.copytree(source_file, replica_folder/source_file.name)
                 make_log('created in', source_file.name, 'folder')
 
-    # iterates over replica folder and removes the files that does not exist in
-    # source folder
+
+# iterates over replica folder and removes the files that does not exist in
+# source folder
+def erase_file():
+    source_files = make_source_list()
     for replica_file in replica_folder.glob('*'):
-        if replica_file.name in source_files:
-            continue
-        else:
+        if replica_file.name not in source_files:
             if replica_file.is_file():
                 Path.unlink(replica_file)
                 make_log('erased from', replica_file.name, 'file')
@@ -147,7 +153,8 @@ def make_sinc():
 # Function to synchronize files at regular intervals defined by the user
 def sinc_exec():
     while True:
-        make_sinc()
+        create_or_copy_file()
+        erase_file()
         time.sleep(sinc_time)
 
 
